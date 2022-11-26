@@ -1,10 +1,19 @@
 pipeline {
-    agent any
-    environment {
-        //be sure to replace "bhavukm" with your own Docker Hub username
-        DOCKER_IMAGE_NAME = "bhavukm/train-schedule"
+    agent {
+        label 'kmaster'
     }
+    environment {
+        //docker image name
+        DOCKER_IMAGE_NAME = "msbalajeee/train-schedule"
+        JAVA_HOME = "/usr/lib/jvm/java-8-oracle/"
+        CANARY_REPLICAS = 1
+        }
     stages {
+        stage('Copy code from GIT') {
+            steps {
+                git 'https://github.com/msbalajeee/cicd-pipeline-train-schedule-autodeploy.git'
+            }
+        }
         stage('Build') {
             steps {
                 echo 'Running build automation'
@@ -12,11 +21,13 @@ pipeline {
                 archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
         }
+
         stage('Build Docker Image') {
-            when {
-                branch 'master'
-            }
+           // when {
+        //       branch 'master'
+        //    }
             steps {
+                
                 script {
                     app = docker.build(DOCKER_IMAGE_NAME)
                     app.inside {
@@ -26,54 +37,30 @@ pipeline {
             }
         }
         stage('Push Docker Image') {
-            when {
-                branch 'master'
-            }
+            // when {
+            //    branch 'master'
+            //}
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker_hub_login') {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
                         app.push("${env.BUILD_NUMBER}")
                         app.push("latest")
                     }
                 }
             }
         }
-        stage('CanaryDeploy') {
-            when {
-                branch 'master'
-            }
-            environment { 
-                CANARY_REPLICAS = 1
-            }
+        
+        stage('Create caranay deployment'){
             steps {
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true
-                )
+                sh 'kubectl create -f train-schedule-kube-canary.yml'
             }
         }
-        stage('DeployToProduction') {
-            when {
-                branch 'master'
-            }
-            environment { 
-                CANARY_REPLICAS = 0
-            }
+        
+         stage('Create production deployment'){
             steps {
-                input 'Deploy to Production?'
-                milestone(1)
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true
-                )
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube.yml',
-                    enableConfigSubstitution: true
-                )
+                sh 'kubectl create -f train-schedule-kube.yml'
             }
         }
     }
+    
 }
