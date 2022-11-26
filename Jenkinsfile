@@ -6,7 +6,6 @@ pipeline {
         //docker image name
         DOCKER_IMAGE_NAME = "msbalajeee/train-schedule"
         JAVA_HOME = "/usr/lib/jvm/java-8-oracle/"
-        CANARY_REPLICAS = 1
         }
     stages {
        // stage('Copy code from GIT') {
