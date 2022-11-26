@@ -9,11 +9,11 @@ pipeline {
         CANARY_REPLICAS = 1
         }
     stages {
-        stage('Copy code from GIT') {
-            steps {
-                git 'https://github.com/msbalajeee/cicd-pipeline-train-schedule-autodeploy.git'
-            }
-        }
+       // stage('Copy code from GIT') {
+       //     steps {
+       //         git 'https://github.com/msbalajeee/cicd-pipeline-train-schedule-autodeploy.git'
+       //     }
+       // }
         stage('Build') {
             steps {
                 echo 'Running build automation'
